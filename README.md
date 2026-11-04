@@ -8,7 +8,7 @@ Aether currently contains a native Jetpack Compose launcher interface with:
 - Minecraft profile/version selection (profile metadata only; no game download yet).
 - Locally persisted memory, render-distance and FPS preferences.
 - A conservative low-end preset (512 MB configured Java heap, 2 chunks, 30 FPS).
-- Device diagnostics for Android version, total RAM, Android app memory class, current app-process bitness and supported ABIs.
+- Device diagnostics for Android version, total RAM, Android app memory class, current app-process bitness, supported ABIs and Android-reported OpenGL ES capability.
 - Home, Instances and Settings navigation.
 
 The low-end preset is a starting configuration for testing on the developer's 2 GB Android 14 phone with a Spreadtrum SC9832E CPU and Mali-T820 GPU. It is not a performance guarantee. The app reports the runtime ABI and does not assume that an ARMv8 CPU means the installed Android userspace is 64-bit.
@@ -17,7 +17,7 @@ The low-end preset is a starting configuration for testing on the developer's 2 
 
 ## Engineering direction
 
-Keep Android UI/profile management separate from the game execution layer. Investigate compatible OpenJDK builds and an Android graphics/window/input bridge before selecting native binaries. Validate ABI and OpenGL ES support on real devices; do not ship an ABI or GPU assumption based only on the CPU name.
+Keep Android UI/profile management separate from the game execution layer. Investigate compatible OpenJDK builds and an Android graphics/window/input bridge before selecting native binaries. Validate ABI and OpenGL ES support on real devices; do not ship an ABI or GPU assumption based only on the CPU name. MobileGlues is one candidate graphics layer, but its published requirement is OpenGL ES 3.0 minimum (3.2 recommended), so Aether must check the actual reported GLES version before selecting it.
 
 ## Planned milestones
 
