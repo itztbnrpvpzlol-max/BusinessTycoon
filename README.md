@@ -4,23 +4,30 @@ A native Android launcher project for Minecraft: Java Edition.
 
 ## Current stage
 
-This first milestone replaces the old Tidebound prototype with a native Jetpack Compose launcher shell. It includes a version selector, profile overview, and device-focused performance settings UI.
+Aether currently contains a native Jetpack Compose launcher interface with:
+- Minecraft profile/version selection (profile metadata only; no game download yet).
+- Locally persisted memory, render-distance and FPS preferences.
+- A conservative low-end preset (512 MB configured Java heap, 2 chunks, 30 FPS).
+- Device diagnostics for Android version, total RAM, Android app memory class, current app-process bitness and supported ABIs.
+- Home, Instances and Settings navigation.
 
-**Important:** The current APK is a launcher interface prototype. It does not yet contain a Java runtime, Minecraft downloader, Microsoft sign-in, or a game renderer, so the Play action is intentionally unavailable.
+The low-end preset is a starting configuration for testing on the developer's 2 GB Android 14 phone with a Spreadtrum SC9832E CPU and Mali-T820 GPU. It is not a performance guarantee. The app reports the runtime ABI and does not assume that an ARMv8 CPU means the installed Android userspace is 64-bit.
+
+**Important:** This is still a launcher foundation, not a playable Minecraft launcher. The Java runtime, Minecraft version metadata/download pipeline, asset and library downloads, authentication, Android window/input/audio integration, and graphics backend are not connected. The Play action remains disabled until a real execution pipeline exists.
 
 ## Engineering direction
 
-The project will keep the Android UI separate from the game execution layer. Running Java Edition on Android requires more than a normal Android Java process: it needs compatible OpenJDK builds, an Android-adapted window/input layer, native libraries, audio, and a graphics translation/backend. We will build and test those pieces as distinct modules rather than claiming the UI itself can launch the game.
+Keep Android UI/profile management separate from the game execution layer. Investigate compatible OpenJDK builds and an Android graphics/window/input bridge before selecting native binaries. Validate ABI and OpenGL ES support on real devices; do not ship an ABI or GPU assumption based only on the CPU name.
 
 ## Planned milestones
 
-1. Native launcher UI and saved profiles.
-2. Version metadata, asset/library download and integrity checks.
-3. Java runtime management for supported Android ABIs.
+1. Native launcher UI, saved profiles and device diagnostics.
+2. Version manifest, asset/library download and integrity verification.
+3. Compatible Java runtime management for detected Android ABIs.
 4. Android-compatible window, input, audio and graphics backend.
 5. Microsoft account authentication and secure token storage.
 6. Fabric/Forge support and per-instance settings.
 
 ## Build
 
-GitHub Actions runs gradle assembleDebug and uploads the debug APK as the AetherLauncher-debug-apk artifact.
+GitHub Actions runs `gradle assembleDebug` and uploads the debug APK as the `AetherLauncher-debug-apk` artifact.
