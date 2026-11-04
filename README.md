@@ -5,7 +5,7 @@ A native Android launcher project for Minecraft: Java Edition.
 ## Current stage
 
 Aether currently contains a native Jetpack Compose launcher interface with:
-- Minecraft profile/version selection (profile metadata only; no game download yet).
+- Minecraft profile/version selection plus an on-demand catalog of the latest 40 stable releases from Mojang's official version manifest (metadata only; no game download yet).
 - Locally persisted memory, render-distance and FPS preferences.
 - A conservative low-end preset (512 MB configured Java heap, 2 chunks, 30 FPS).
 - Device diagnostics for Android version, total RAM, Android app memory class, current app-process bitness, supported ABIs and Android-reported OpenGL ES capability.
