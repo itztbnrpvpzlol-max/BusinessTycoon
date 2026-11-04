@@ -26,6 +26,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,6 +57,37 @@ class MainActivity : ComponentActivity() {
 
 private data class DeviceInfo(val model: String, val android: String, val ramMb: Long, val appClass: Int, val is64: Boolean, val abis: String, val glEs: String)
 private data class GraphicsInfo(val version: String, val renderer: String, val vendor: String, val error: String? = null)
+private data class McVersion(val id: String, val type: String, val releaseTime: String, val url: String)
+
+private suspend fun fetchReleaseCatalog(): List<McVersion> = withContext(Dispatchers.IO) {
+    val connection = (URL("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json").openConnection() as HttpURLConnection).apply {
+        connectTimeout = 12000
+        readTimeout = 12000
+        requestMethod = "GET"
+        setRequestProperty("User-Agent", "AetherLauncher/0.1.0")
+    }
+    try {
+        if (connection.responseCode !in 200..299) throw IllegalStateException("Mojang returned HTTP ${connection.responseCode}")
+        val json = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+        val versions = json.getJSONArray("versions")
+        buildList {
+            for (i in 0 until versions.length()) {
+                val item = versions.getJSONObject(i)
+                if (item.optString("type") == "release") {
+                    add(McVersion(
+                        item.getString("id"),
+                        item.getString("type"),
+                        item.optString("releaseTime", ""),
+                        item.getString("url")
+                    ))
+                }
+                if (size >= 40) break
+            }
+        }
+    } finally {
+        connection.disconnect()
+    }
+}
 
 private fun probeGraphics(): GraphicsInfo {
     var display: EGLDisplay = EGL14.EGL_NO_DISPLAY
@@ -120,6 +155,10 @@ private fun AetherHome() {
     var ram by remember { mutableIntStateOf(prefs.getInt("ram", 512).coerceIn(384, 768)) }
     var chunks by remember { mutableIntStateOf(prefs.getInt("chunks", 2).coerceIn(2, 6)) }
     var fps by remember { mutableIntStateOf(prefs.getInt("fps", 30).coerceIn(30, 60)) }
+    var catalog by remember { mutableStateOf<List<McVersion>>(emptyList()) }
+    var catalogLoading by remember { mutableStateOf(false) }
+    var catalogError by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     Surface(Modifier.fillMaxSize(), color = bg) {
         Column(Modifier.fillMaxSize()) {
@@ -184,13 +223,58 @@ private fun AetherHome() {
                         }
                     }
                     "Instances" -> {
-                        Text("INSTANCES", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Text("INSTANCES & VERSIONS", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                         Card(colors = CardDefaults.cardColors(containerColor = panel)) {
-                            Column(Modifier.padding(16.dp)) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Default profile", color = Color.White, fontWeight = FontWeight.Bold)
                                 Text("Minecraft Java Edition • $version", color = muted)
-                                Text("Local profile settings are saved. Game installation is not available yet.", color = muted, fontSize = 12.sp)
+                                Text("Choose a release below to set the profile version. This catalog reads official Mojang metadata only; it does not download game files or install Minecraft.", color = muted, fontSize = 12.sp)
                             }
+                        }
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    catalogLoading = true
+                                    catalogError = null
+                                    try {
+                                        catalog = fetchReleaseCatalog()
+                                    } catch (e: Exception) {
+                                        catalogError = e.message ?: "Could not load official version list"
+                                    } finally {
+                                        catalogLoading = false
+                                    }
+                                }
+                            },
+                            enabled = !catalogLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (catalogLoading) "LOADING OFFICIAL RELEASES…" else "REFRESH OFFICIAL RELEASES")
+                        }
+                        catalogError?.let { Text("Catalog error: $it", color = Color(0xFFFF8A80), fontSize = 12.sp) }
+                        catalog.forEach { item ->
+                            Card(
+                                onClick = {
+                                    version = item.id
+                                    prefs.edit().putString("version", item.id).apply()
+                                },
+                                colors = CardDefaults.cardColors(containerColor = if (version == item.id) Color(0xFF202D49) else panel),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Row(
+                                    Modifier.fillMaxWidth().padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(item.id, color = Color.White, fontWeight = FontWeight.Bold)
+                                        Text(item.releaseTime.take(10), color = muted, fontSize = 11.sp)
+                                    }
+                                    Text(if (version == item.id) "SELECTED" else "SELECT", color = accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                        if (catalog.isEmpty() && !catalogLoading && catalogError == null) {
+                            Text("Tap refresh to load the latest 40 stable Minecraft releases from Mojang.", color = muted, fontSize = 12.sp)
                         }
                     }
                     else -> {
