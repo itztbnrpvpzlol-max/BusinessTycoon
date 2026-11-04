@@ -159,6 +159,8 @@ private fun AetherHome() {
     var ram by remember { mutableIntStateOf(prefs.getInt("ram", 512).coerceIn(384, 768)) }
     var chunks by remember { mutableIntStateOf(prefs.getInt("chunks", 2).coerceIn(2, 6)) }
     var fps by remember { mutableIntStateOf(prefs.getInt("fps", 30).coerceIn(30, 60)) }
+    var cursorSize by remember { mutableFloatStateOf(prefs.getFloat("cursor_size", 24f).coerceIn(12f, 48f)) }
+    var cursorSpeed by remember { mutableFloatStateOf(prefs.getFloat("cursor_speed", 1.0f).coerceIn(0.5f, 3f)) }
     var catalog by remember { mutableStateOf<List<McVersion>>(emptyList()) }
     var catalogLoading by remember { mutableStateOf(false) }
     var catalogError by remember { mutableStateOf<String?>(null) }
@@ -314,6 +316,21 @@ private fun AetherHome() {
                         }
                     }
                     else -> {
+                        Text("SETTINGS", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Card(colors = CardDefaults.cardColors(containerColor = panel)) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("VIRTUAL CURSOR", color = Color.White, fontWeight = FontWeight.Bold)
+                                Tune("Cursor size", cursorSize.toInt().toString() + " dp", cursorSize, 12f..48f, 11) {
+                                    cursorSize = it
+                                    prefs.edit().putFloat("cursor_size", it).apply()
+                                }
+                                Tune("Cursor speed", String.format("%.1fx", cursorSpeed), cursorSpeed, 0.5f..3f, 9) {
+                                    cursorSpeed = it
+                                    prefs.edit().putFloat("cursor_speed", it).apply()
+                                }
+                                Text("Swipe to move • Volume Up: left click • Volume Down: right click • Hold both volume keys and swipe vertically: scroll", color = muted, fontSize = 11.sp)
+                            }
+                        }
                         Text("DEVICE & COMPATIBILITY", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                         Card(colors = CardDefaults.cardColors(containerColor = panel)) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
