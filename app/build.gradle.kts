@@ -3,16 +3,23 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
-
 android {
-    namespace = "com.aetherlauncher.app"
+    namespace = "com.effectcraft.mobile"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.aetherlauncher.app"
+        applicationId = "com.effectcraft.mobile"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+    }
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a")
+            isUniversalApk = true
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -21,7 +28,6 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
 }
-
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.01.00"))
     implementation("androidx.activity:activity-compose:1.10.0")
