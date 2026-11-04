@@ -5,6 +5,12 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
+import android.opengl.EGL14
+import android.opengl.EGLConfig
+import android.opengl.EGLContext
+import android.opengl.EGLDisplay
+import android.opengl.EGLSurface
+import android.opengl.GLES20
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -18,6 +24,8 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,6 +52,44 @@ class MainActivity : ComponentActivity() {
 }
 
 private data class DeviceInfo(val model: String, val android: String, val ramMb: Long, val appClass: Int, val is64: Boolean, val abis: String, val glEs: String)
+private data class GraphicsInfo(val version: String, val renderer: String, val vendor: String, val error: String? = null)
+
+private fun probeGraphics(): GraphicsInfo {
+    var display: EGLDisplay = EGL14.EGL_NO_DISPLAY
+    var context: EGLContext = EGL14.EGL_NO_CONTEXT
+    var surface: EGLSurface = EGL14.EGL_NO_SURFACE
+    try {
+        display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
+        if (display == EGL14.EGL_NO_DISPLAY) throw IllegalStateException("No EGL display")
+        val versions = IntArray(2)
+        if (!EGL14.eglInitialize(display, versions, 0, versions, 1)) throw IllegalStateException("EGL initialize failed")
+        val configAttrs = intArrayOf(EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT, EGL14.EGL_SURFACE_TYPE, EGL14.EGL_PBUFFER_BIT, EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8, EGL14.EGL_NONE)
+        val configs = arrayOfNulls<EGLConfig>(1)
+        val count = IntArray(1)
+        if (!EGL14.eglChooseConfig(display, configAttrs, 0, configs, 0, 1, count, 0) || count[0] == 0) throw IllegalStateException("No compatible EGL config")
+        val contextAttrs = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE)
+        context = EGL14.eglCreateContext(display, configs[0], EGL14.EGL_NO_CONTEXT, contextAttrs, 0)
+        if (context == EGL14.EGL_NO_CONTEXT) throw IllegalStateException("EGL context creation failed")
+        val surfaceAttrs = intArrayOf(EGL14.EGL_WIDTH, 1, EGL14.EGL_HEIGHT, 1, EGL14.EGL_NONE)
+        surface = EGL14.eglCreatePbufferSurface(display, configs[0], surfaceAttrs, 0)
+        if (surface == EGL14.EGL_NO_SURFACE) throw IllegalStateException("EGL surface creation failed")
+        if (!EGL14.eglMakeCurrent(display, surface, surface, context)) throw IllegalStateException("EGL make-current failed")
+        return GraphicsInfo(
+            GLES20.glGetString(GLES20.GL_VERSION) ?: "Unknown",
+            GLES20.glGetString(GLES20.GL_RENDERER) ?: "Unknown",
+            GLES20.glGetString(GLES20.GL_VENDOR) ?: "Unknown"
+        )
+    } catch (e: Exception) {
+        return GraphicsInfo("Unavailable", "Unavailable", "Unavailable", e.message ?: "Graphics probe failed")
+    } finally {
+        if (display != EGL14.EGL_NO_DISPLAY) {
+            if (surface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, surface)
+            if (context != EGL14.EGL_NO_CONTEXT) EGL14.eglDestroyContext(display, context)
+            EGL14.eglTerminate(display)
+        }
+    }
+}
+
 
 private fun detectDevice(context: Context): DeviceInfo {
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -67,6 +113,8 @@ private fun AetherHome() {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
     val device = remember { detectDevice(context) }
+    var graphics by remember { mutableStateOf<GraphicsInfo?>(null) }
+    LaunchedEffect(Unit) { graphics = withContext(Dispatchers.Default) { probeGraphics() } }
     var tab by remember { mutableStateOf("Home") }
     var version by remember { mutableStateOf(prefs.getString("version", "1.8.9") ?: "1.8.9") }
     var ram by remember { mutableIntStateOf(prefs.getInt("ram", 512).coerceIn(384, 768)) }
@@ -155,10 +203,14 @@ private fun AetherHome() {
                                 Info("Android app memory class", device.appClass.toString() + " MB")
                                 Info("Process architecture", if (device.is64) "64-bit" else "32-bit")
                                 Info("Supported ABIs", device.abis)
-                                Info("OpenGL ES reported", device.glEs)
+                                Info("OpenGL ES reported by Android", device.glEs)
+                                Info("Live OpenGL version", graphics?.version ?: "Checking GPU…")
+                                Info("GPU renderer", graphics?.renderer ?: "Checking GPU…")
+                                Info("GPU vendor", graphics?.vendor ?: "Checking GPU…")
+                                graphics?.error?.let { Info("Probe status", it) }
                             }
                         }
-                        Text("Your reported Mali-T820 is the graphics target. We still need a live EGL graphics probe to read the installed GPU driver.", color = muted, fontSize = 12.sp)
+                        Text("The live EGL probe creates a tiny off-screen graphics context. It does not launch Minecraft or prove renderer compatibility, but it identifies the driver actually exposed to Android apps.", color = muted, fontSize = 12.sp)
                     }
                 }
             }
