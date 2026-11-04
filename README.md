@@ -1,49 +1,47 @@
-# Aether Launcher
+# EffectCraft Mobile
 
-A native Android launcher project for Minecraft: Java Edition.
+An Android-focused mobile port project for [EffectCraft](https://github.com/storytold/effectcraft), an open-source motion graphics and compositing application.
 
-## Current stage
+## Direction
 
-Aether currently contains a native Jetpack Compose launcher interface with:
-- Minecraft profile/version selection plus an on-demand catalog of the latest 40 stable releases from Mojang's official version manifest (metadata only; no game download yet).
-- Locally persisted memory, render-distance and FPS preferences.
-- A conservative low-end preset (512 MB configured Java heap, 2 chunks, 30 FPS).
-- Device diagnostics for Android version, total RAM, Android app memory class, current app-process bitness, supported ABIs and Android-reported OpenGL ES capability.
-- A live EGL/OpenGL ES 2.0 context probe that reads the graphics version, renderer and vendor from the installed driver.
-- Home, Instances and Settings navigation.
+This repository is now focused on one app: **EffectCraft Mobile**. The previous Aether Launcher / Minecraft launcher product direction has been retired from the Android app.
 
-The low-end preset is a starting configuration for testing on the developer's 2 GB Android 14 phone with a Spreadtrum SC9832E CPU and Mali-T820 GPU. It is not a performance guarantee. The app reports the runtime ABI and does not assume that an ARMv8 CPU means the installed Android userspace is 64-bit.
+The goal is to bring EffectCraft's actual composition, layer, keyframe, effects, preview and export engine to Android with a touch-first Kotlin interface.
 
-**Important:** This is still a launcher foundation, not a playable Minecraft launcher. The Java runtime, Minecraft version metadata/download pipeline, asset and library downloads, authentication, Android window/input/audio integration, and graphics backend are not connected. The Play action remains disabled until a real execution pipeline exists.
+## Current state
 
-## Engineering direction
+- Native Android application shell using Kotlin and Jetpack Compose.
+- Initial touch-oriented editor layout with composition viewer placeholder, layer list, timeline controls and property-panel entry points.
+- ARM APK packaging configured for armeabi-v7a and arm64-v8a, including a universal APK.
+- The upstream EffectCraft engine is not yet linked into the Android app. The current viewer and timeline are UI scaffolding, not a functioning renderer or editor.
+- No WebView-based hosted editor is used.
 
-Keep Android UI/profile management separate from the game execution layer. Investigate compatible OpenJDK builds and an Android graphics/window/input bridge before selecting native binaries. Validate ABI and OpenGL ES support on real devices; do not ship an ABI or GPU assumption based only on the CPU name. The app's EGL probe is a diagnostic (it creates a tiny off-screen ES 2 context), not a benchmark or proof that a Minecraft renderer will work. MobileGlues is one candidate graphics layer, but its published requirement is OpenGL ES 3.0 minimum (3.2 recommended), so Aether must check the actual reported GLES version before selecting it.
+## Port architecture
 
-## Planned milestones
+- **Android UI:** Kotlin + Jetpack Compose.
+- **Core engine:** upstream EffectCraft Rust crates, integrated incrementally.
+- **Native bridge:** JNI / Rust Android library once the engine's Android-compatible crate graph is established.
+- **Rendering:** investigate the existing wgpu/GLES/Vulkan paths against actual Android GPU support.
+- **Projects:** preserve EffectCraft's .ecproj project format and upstream serialization.
+- **ABI targets:** armeabi-v7a and arm64-v8a. A universal APK is produced for convenient installation.
 
-1. Native launcher UI, saved profiles and device diagnostics.
-2. Version manifest, asset/library download and integrity verification.
-3. Compatible Java runtime management for detected Android ABIs.
-4. Android-compatible window, input, audio and graphics backend.
-5. Microsoft account authentication and secure token storage.
-6. Fabric/Forge support and per-instance settings.
+The upstream project is dual-licensed MIT or Apache-2.0. Preserve its NOTICE, license files and ATTRIBUTION.md; third-party assets and dependencies retain their own licenses. The ArtCraft / EffectCraft trademarks and logos are not granted by the source license, so this mobile fork uses its own app identity and must not reuse protected brand assets outside the upstream terms.
+
+## Device constraints
+
+The initial target includes lower-end Android devices. Rendering must be profiled on real devices, use conservative preview resolution and cache budgets, and provide a lightweight mode. ARM CPU support alone does not imply GPU feature support. The 32-bit ARM build must be tested separately; unsupported dependencies or APIs must be excluded or replaced before claiming compatibility.
 
 ## Build
 
-GitHub Actions runs `gradle assembleDebug` and uploads the debug APK as the `AetherLauncher-debug-apk` artifact.
+GitHub Actions builds the Android debug APK. Artifacts include ABI-specific packages and the universal APK.
 
+## Upstream
 
-## EffectCraft Studio (experimental)
+- Source: https://github.com/storytold/effectcraft
+- Architecture: https://github.com/storytold/effectcraft/blob/main/docs/architecture.md
+- Web build notes: https://github.com/storytold/effectcraft/blob/main/docs/web.md
+- Licenses: MIT or Apache-2.0 (see upstream LICENSE-MIT, LICENSE-APACHE, NOTICE, and ATTRIBUTION.md).
 
-Aether now includes a **Studio** tab that embeds the EffectCraft browser editor in an Android WebView. It opens the community-hosted alpha workspace at `https://getartcraft.org/studio/effectcraft?webgl` and forces the WebGL2 renderer rather than relying on WebGPU.
+## Honest status
 
-Important limitations:
-
-- This is a hosted community build, **not** an official Android port or a locally bundled copy of EffectCraft.
-- The hosted workspace currently identifies itself as an older alpha release. Its controls are designed primarily for desktop browsers, so touch interaction may be awkward.
-- WebGL2 availability depends on the Android System WebView and the phone's GPU driver. Startup may fail on some devices.
-- The phone has 2 GB RAM; large footage, compositions and renders may crash or become very slow. Start with a tiny composition and save/export backups frequently.
-- The first load requires an internet connection. Project persistence is handled by the hosted page's browser storage.
-
-This integration is a first compatibility test, not a claim that EffectCraft is fully supported on this device. Upstream source and web-build documentation: https://github.com/storytold/effectcraft
+This is the beginning of the Android port, not yet a complete After Effects replacement. The native editor interface is only a shell until the Rust project model, renderer, effects, footage pipeline, audio and export engine are successfully integrated and tested on Android.
