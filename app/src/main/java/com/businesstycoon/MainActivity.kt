@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                                 click = { val p = Engine.clickCost(game.clickLevel); if (game.cash >= p) game = game.copy(cash = game.cash - p, clickLevel = game.clickLevel + 1) },
                                 income = { val p = Engine.incomeCost(game.incomeLevel); if (game.cash >= p) game = game.copy(cash = game.cash - p, incomeLevel = game.incomeLevel + 1) })
                             else -> StatsPage(game) {
-                                if (game.lifetime >= 1_000_000) game = GameData(prestige = game.prestige + 1, lifetime = game.lifetime)
+                                if (game.lifetime >= 1_000_000) game = GameData(prestige = game.prestige + 1, lifetime = 0.0)
                                 else dialog = "Earn $1M lifetime cash to unlock prestige."
                             }
                         }
@@ -205,7 +205,7 @@ class MainActivity : ComponentActivity() {
     Column {
         Heading("Empire Statistics", "Your progress so far.")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Tile("Lifetime earned", cash(g.lifetime), Modifier.weight(1f))
+            Tile("Run earnings", cash(g.lifetime), Modifier.weight(1f))
             Tile("Total taps", g.taps.toString(), Modifier.weight(1f))
         }
         Spacer(Modifier.height(10.dp))
@@ -219,7 +219,7 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.weight(1f)) {
                 Text("Prestige", fontWeight = FontWeight.Bold)
                 Text("Reset cash, businesses and upgrades for a permanent +25% income bonus.", color = muted, fontSize = 12.sp)
-                Text("Requirement: $1M lifetime earned", color = green, fontSize = 11.sp)
+                Text("Requirement: $1M run earnings", color = green, fontSize = 11.sp)
                 Text("Current bonus: +${g.prestige * 25}%", color = green, fontWeight = FontWeight.Bold)
             }
         }
