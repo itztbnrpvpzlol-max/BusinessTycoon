@@ -1,0 +1,3 @@
+[submodule "effectcraft-upstream"]
+	path = effectcraft-upstream
+	url = https://github.com/storytold/effectcraft.git
