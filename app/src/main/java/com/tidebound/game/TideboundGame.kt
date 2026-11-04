@@ -150,17 +150,17 @@ class TideboundGame : ApplicationAdapter() {
 
     private fun makeBox(w: Float, h: Float, d: Float, color: Color): Model {
         val material = com.badlogic.gdx.graphics.g3d.Material(ColorAttribute.createDiffuse(color))
-        return ModelBuilder().createBox(w, h, d, material, VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).also { models += it }
+        return ModelBuilder().createBox(w, h, d, material, VertexAttributes.Usage.Position.toLong() or VertexAttributes.Usage.Normal.toLong()).also { models += it }
     }
 
     private fun makeCylinder(w: Float, h: Float, d: Float, color: Color): Model {
         val material = com.badlogic.gdx.graphics.g3d.Material(ColorAttribute.createDiffuse(color))
-        return ModelBuilder().createCylinder(w, h, d, 18, material, VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).also { models += it }
+        return ModelBuilder().createCylinder(w, h, d, 18, material, VertexAttributes.Usage.Position.toLong() or VertexAttributes.Usage.Normal.toLong()).also { models += it }
     }
 
     private fun makeSphere(w: Float, h: Float, d: Float, color: Color): Model {
         val material = com.badlogic.gdx.graphics.g3d.Material(ColorAttribute.createDiffuse(color))
-        return ModelBuilder().createSphere(w, h, d, 16, 12, material, VertexAttributes.Usage.Position or VertexAttributes.Usage.Normal).also { models += it }
+        return ModelBuilder().createSphere(w, h, d, 16, 12, material, VertexAttributes.Usage.Position.toLong() or VertexAttributes.Usage.Normal.toLong()).also { models += it }
     }
 
     private fun addWorldBox(w: Float, h: Float, d: Float, x: Float, y: Float, z: Float, color: Color) {
