@@ -13,7 +13,7 @@ The goal is to bring EffectCraft's actual composition, layer, keyframe, effects,
 - Native Android application shell using Kotlin and Jetpack Compose.
 - Initial touch-oriented editor layout with composition viewer placeholder, layer list, timeline controls and property-panel entry points.
 - ARM APK packaging configured for armeabi-v7a and arm64-v8a, including a universal APK.
-- The upstream EffectCraft engine is not yet linked into the Android app. The current viewer and timeline are UI scaffolding, not a functioning renderer or editor.
+- The complete upstream EffectCraft repository is pinned as a Git submodule at effectcraft-upstream (commit 58ca9c1). The Android app does not yet compile or call the engine. The current viewer and timeline are UI scaffolding, not a functioning renderer or editor.
 - No WebView-based hosted editor is used.
 
 ## Port architecture
