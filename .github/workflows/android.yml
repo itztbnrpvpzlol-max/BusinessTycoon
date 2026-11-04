@@ -1,4 +1,4 @@
-name: Tidebound Android Build
+name: Aether Launcher Android Build
 on:
   push:
     branches: [ main ]
@@ -24,7 +24,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: Tidebound-debug-apk
+          name: AetherLauncher-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
