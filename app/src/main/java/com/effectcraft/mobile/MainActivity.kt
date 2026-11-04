@@ -224,7 +224,7 @@ private fun TimelinePanel(
         }
         Row(Modifier.fillMaxWidth().height(25.dp).background(Color(0xFF303030)).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Layer Name", color = muted, fontSize = 8.sp, modifier = Modifier.weight(0.42f))
-            Box(Modifier.weight(0.58f).fillMaxHeight().clickable { onTime((time + 0.1f).coerceAtMost(1f) }) {
+            Box(Modifier.weight(0.58f).fillMaxHeight().clickable { onTime((time + 0.1f).coerceAtMost(1f)) }) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     (0..5).forEach { Text((it * 2).toString() + "s", color = muted, fontSize = 8.sp) }
                 }
