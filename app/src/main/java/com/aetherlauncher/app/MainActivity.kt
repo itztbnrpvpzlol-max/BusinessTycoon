@@ -34,6 +34,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -222,6 +226,38 @@ private fun AetherHome() {
                             }
                         }
                     }
+
+                    "Studio" -> {
+                        Text("AETHER STUDIO", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Text("EffectCraft browser workspace • experimental", color = muted, fontSize = 12.sp)
+                        Card(colors = CardDefaults.cardColors(containerColor = panel), shape = RoundedCornerShape(14.dp)) {
+                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Before you start", color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("This opens a community-hosted EffectCraft web build, not an official Android port. It is an older alpha release and may fail on this phone's GPU or run slowly with 2 GB RAM. Save or export projects often.", color = muted, fontSize = 11.sp)
+                            }
+                        }
+                        AndroidView(
+                            modifier = Modifier.fillMaxWidth().height(560.dp),
+                            factory = { viewContext ->
+                                WebView(viewContext).apply {
+                                    settings.javaScriptEnabled = true
+                                    settings.domStorageEnabled = true
+                                    settings.databaseEnabled = true
+                                    settings.mediaPlaybackRequiresUserGesture = false
+                                    settings.allowFileAccess = false
+                                    settings.allowContentAccess = false
+                                    webViewClient = WebViewClient()
+                                    webChromeClient = WebChromeClient()
+                                    loadUrl("https://getartcraft.org/studio/effectcraft?webgl")
+                                }
+                            },
+                            update = { webView ->
+                                if (webView.url.isNullOrBlank()) {
+                                    webView.loadUrl("https://getartcraft.org/studio/effectcraft?webgl")
+                                }
+                            }
+                        )
+                    }
                     "Instances" -> {
                         Text("INSTANCES & VERSIONS", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                         Card(colors = CardDefaults.cardColors(containerColor = panel)) {
@@ -300,12 +336,13 @@ private fun AetherHome() {
             }
             HorizontalDivider()
             Row(Modifier.fillMaxWidth().background(panel), horizontalArrangement = Arrangement.SpaceEvenly) {
-                listOf("Home", "Instances", "Settings").forEach { name ->
+                listOf("Home", "Instances", "Studio", "Settings").forEach { name ->
                     TextButton(onClick = { tab = name }) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(when (name) {
                                 "Home" -> Icons.Default.Gamepad
                                 "Instances" -> Icons.Default.Memory
+                                "Studio" -> Icons.Default.Gamepad
                                 else -> Icons.Default.Settings
                             }, contentDescription = name, tint = if (tab == name) accent else muted)
                             Text(name, color = if (tab == name) accent else muted, fontSize = 10.sp)
