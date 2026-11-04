@@ -1,18 +1,21 @@
-# Business Tycoon
+# Tidebound: Pirate Adventure
 
-A simple native Android idle business clicker built with Kotlin and Jetpack Compose.
+A single-player, third-person 3D pirate adventure for Android, written in Kotlin with LibGDX.
 
-## Gameplay
-- Tap to earn cash.
-- Buy businesses that generate passive income.
-- Invest in market shares and rental properties.
-- Purchase click and business-income upgrades.
-- Prestige for a permanent income multiplier.
-- Automatic local saves and up to 8 hours of offline earnings.
+## Current prototype
+
+- Procedurally built 3D ship deck and ocean environment
+- Third-person follow camera
+- Touch joystick movement
+- Touch attack control
+- Original pirate enemies and a captain boss
+- Basic health, combat, and chapter objective
+- Landscape Android layout
 
 ## Build
-Open in Android Studio and run the **app** configuration.
 
-Requirements: JDK 17, Android SDK 35, Gradle 8.9+.
+The GitHub Actions workflow runs `gradle assembleDebug` and uploads the APK as the `Tidebound-debug-apk` artifact.
 
-All currency and investments are simulated in-game; no real-money transactions are involved.
+## Direction
+
+Tidebound is an original pirate-fantasy setting with its own characters, islands, quests, and story. The first prototype focuses on making the core 3D mobile controls and combat playable before expanding into additional islands.
