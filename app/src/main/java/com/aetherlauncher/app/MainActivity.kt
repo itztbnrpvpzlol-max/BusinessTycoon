@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
     var studioControlsEnabled = false
     private var volumeUpHeld = false
     private var volumeDownHeld = false
+    private var volumeComboUsed = false
     private var cursorX = 40f
     private var cursorY = 40f
     private var lastTouchY = 0f
@@ -95,6 +96,10 @@ class MainActivity : ComponentActivity() {
         updateVirtualCursor()
     }
 
+    fun refreshVirtualCursor() {
+        updateVirtualCursor()
+    }
+
     private fun updateVirtualCursor() {
         val view = studioWebView ?: return
         val x = cursorX
@@ -116,16 +121,24 @@ class MainActivity : ComponentActivity() {
         if (studioControlsEnabled && studioWebView != null &&
             (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
             if (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-                if (event.action == KeyEvent.ACTION_DOWN) volumeUpHeld = true
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    volumeUpHeld = true
+                    if (volumeDownHeld) volumeComboUsed = true
+                }
                 if (event.action == KeyEvent.ACTION_UP) {
                     volumeUpHeld = false
-                    if (!volumeDownHeld) clickAt(0)
+                    if (!volumeDownHeld && !volumeComboUsed) clickAt(0)
+                    if (!volumeDownHeld) volumeComboUsed = false
                 }
             } else {
-                if (event.action == KeyEvent.ACTION_DOWN) volumeDownHeld = true
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    volumeDownHeld = true
+                    if (volumeUpHeld) volumeComboUsed = true
+                }
                 if (event.action == KeyEvent.ACTION_UP) {
                     volumeDownHeld = false
-                    if (!volumeUpHeld) clickAt(2)
+                    if (!volumeUpHeld && !volumeComboUsed) clickAt(2)
+                    if (!volumeUpHeld) volumeComboUsed = false
                 }
             }
             return true
@@ -337,7 +350,12 @@ private fun AetherHome() {
                                     settings.mediaPlaybackRequiresUserGesture = false
                                     settings.allowFileAccess = false
                                     settings.allowContentAccess = false
-                                    webViewClient = WebViewClient()
+                                    webViewClient = object : WebViewClient() {
+                                        override fun onPageFinished(view: WebView, url: String?) {
+                                            super.onPageFinished(view, url)
+                                            (view.context as? MainActivity)?.refreshVirtualCursor()
+                                        }
+                                    }
                                     webChromeClient = WebChromeClient()
                                     (viewContext as? MainActivity)?.attachStudioWebView(this)
                                     loadUrl("https://getartcraft.org/studio/effectcraft?webgl")
