@@ -166,7 +166,7 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.weight(1f)) {
                 Text("Rental property", fontWeight = FontWeight.Bold)
                 Text("Owned: ${g.properties}", color = muted, fontSize = 12.sp)
-                Text("+$18.00 passive income / sec each", color = green, fontSize = 11.sp)
+                Text("+\$18.00 passive income / sec each", color = green, fontSize = 11.sp)
                 Text("Next: ${cash(Engine.propertyCost(g.properties))}", color = muted, fontSize = 11.sp)
             }
             Button(onClick = buyProperty, enabled = g.cash >= Engine.propertyCost(g.properties)) { Text("Buy") }
@@ -183,7 +183,7 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.weight(1f)) {
                 Text("Stronger clicks", fontWeight = FontWeight.Bold)
                 Text("Level ${g.clickLevel} • Tap: ${cash(g.tapValue)}", color = muted, fontSize = 12.sp)
-                Text("Adds $2 base value per tap.", color = green, fontSize = 11.sp)
+                Text("Adds \$2 base value per tap.", color = green, fontSize = 11.sp)
                 Text("Cost: ${cash(Engine.clickCost(g.clickLevel))}", color = muted, fontSize = 11.sp)
             }
             Button(onClick = click, enabled = g.cash >= Engine.clickCost(g.clickLevel)) { Text("Upgrade") }
@@ -219,7 +219,7 @@ class MainActivity : ComponentActivity() {
             Column(Modifier.weight(1f)) {
                 Text("Prestige", fontWeight = FontWeight.Bold)
                 Text("Reset cash, businesses and upgrades for a permanent +25% income bonus.", color = muted, fontSize = 12.sp)
-                Text("Requirement: $1M run earnings", color = green, fontSize = 11.sp)
+                Text("Requirement: \$1M run earnings", color = green, fontSize = 11.sp)
                 Text("Current bonus: +${g.prestige * 25}%", color = green, fontWeight = FontWeight.Bold)
             }
         }
