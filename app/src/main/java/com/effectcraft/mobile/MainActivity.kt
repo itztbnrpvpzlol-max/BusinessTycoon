@@ -3,172 +3,354 @@ package com.effectcraft.mobile
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ContentCut
-import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val canvas = Color(0xFF090B10)
-private val surface = Color(0xFF151922)
-private val raised = Color(0xFF202735)
-private val violet = Color(0xFF9B87FF)
-private val secondary = Color(0xFF9AA4B5)
+private val bg = Color(0xFF202020)
+private val panel = Color(0xFF292929)
+private val header = Color(0xFF242424)
+private val border = Color(0xFF454545)
+private val fg = Color(0xFFE3E3E3)
+private val muted = Color(0xFFA5A5A5)
+private val purple = Color(0xFFB5A0FF)
+private val active = Color(0xFF51456F)
+
+private val panels = listOf("Project", "Effect Controls", "Composition", "Layer", "Timeline", "Info", "Audio", "Preview", "Effects & Presets", "Properties", "Character", "Paragraph", "Align", "Tracker", "Wiggler", "Smoother", "Motion Sketch", "Paint", "Brushes", "Render Queue", "Flowchart", "History", "Markers", "Mask Interpolation", "Script Console", "Essential Graphics", "Lumetri Scopes", "Footage", "Media Browser", "Metadata", "Progress", "Content-Aware Fill", "Create Nulls From Paths", "VR Comp Editor")
+private val tools = listOf("Selection", "Hand", "Zoom", "Orbit", "Pan Camera", "Dolly", "Rotate", "Pan Behind", "Rectangle", "Rounded Rectangle", "Ellipse", "Polygon", "Star", "Pen", "Add Vertex", "Delete Vertex", "Convert Vertex", "Mask Feather", "Type", "Vertical Type", "Brush", "Clone Stamp", "Eraser", "Roto Brush", "Refine Edge", "Object Matte", "Puppet")
+
+private data class UiLayer(val id: Int, val name: String, val kind: String, val tint: Color)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.statusBarColor = android.graphics.Color.rgb(32, 32, 32)
+        window.navigationBarColor = android.graphics.Color.rgb(32, 32, 32)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme(
-                primary = violet,
-                background = canvas,
-                surface = surface,
-                onBackground = Color.White,
-                onSurface = Color.White
-            )) {
-                EffectCraftEditor()
+            MaterialTheme(colorScheme = darkColorScheme(primary = purple, background = bg, surface = panel, onBackground = fg, onSurface = fg)) {
+                EffectCraftWorkspace()
             }
         }
     }
 }
 
-private data class EditorLayer(val id: Int, val name: String, val kind: String)
-
 @Composable
-private fun EffectCraftEditor() {
+private fun EffectCraftWorkspace() {
+    var panelName by remember { mutableStateOf("Composition") }
+    var selectedTool by remember { mutableStateOf("Selection") }
     var selectedLayer by remember { mutableIntStateOf(1) }
-    var playing by remember { mutableStateOf(false) }
-    var playhead by remember { mutableFloatStateOf(0.18f) }
-    var showProperties by remember { mutableStateOf(true) }
+    var menu by remember { mutableStateOf<String?>(null) }
+    var playhead by remember { mutableFloatStateOf(0f) }
+    var query by remember { mutableStateOf("") }
     var nextId by remember { mutableIntStateOf(4) }
     val layers = remember { mutableStateListOf(
-        EditorLayer(1, "Text Layer", "TEXT"),
-        EditorLayer(2, "Shape Layer", "SHAPE"),
-        EditorLayer(3, "Background", "SOLID")
+        UiLayer(1, "Text Layer", "Text", Color(0xFF9D80CF)),
+        UiLayer(2, "Shape Layer", "Shape", Color(0xFF6B9FBF)),
+        UiLayer(3, "Background", "Solid", Color(0xFF9B9B65))
     ) }
+    val current = layers.firstOrNull { it.id == selectedLayer }
 
-    Surface(Modifier.fillMaxSize(), color = canvas) {
-        Column(Modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().background(surface).padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = secondary)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("EFFECTCRAFT", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-                    Text("Untitled Composition", color = secondary, fontSize = 11.sp)
-                }
-                IconButton(onClick = { }) { Icon(Icons.Default.Save, "Save project", tint = Color.White) }
-                IconButton(onClick = { showProperties = !showProperties }) {
-                    Icon(Icons.Default.Tune, "Toggle properties", tint = violet)
-                }
+    Column(Modifier.fillMaxSize().background(bg)) {
+        Row(Modifier.fillMaxWidth().height(42.dp).background(Color(0xFF191919)).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Ef", color = purple, fontSize = 20.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.width(9.dp))
+            Column(Modifier.weight(1f)) {
+                Text("EffectCraft", color = fg, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text("Untitled Project", color = muted, fontSize = 9.sp)
             }
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("COMPOSITION VIEWER", color = secondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                    Text("960 × 540  •  30 FPS", color = secondary, fontSize = 10.sp)
-                }
-                Box(
-                    Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color(0xFF050608), RoundedCornerShape(10.dp)).border(1.dp, raised, RoundedCornerShape(10.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("EffectCraft", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-                        Text("MOBILE COMPOSITION PREVIEW", color = violet, fontSize = 9.sp, letterSpacing = 2.sp)
-                    }
-                    Text("PREVIEW", Modifier.align(Alignment.TopStart).padding(9.dp), color = secondary, fontSize = 9.sp)
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("TIMELINE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    Spacer(Modifier.weight(1f))
-                    Text("00:00:05:12", color = secondary, fontSize = 11.sp)
-                    IconButton(onClick = { playing = !playing }) {
-                        Icon(Icons.Default.PlayArrow, if (playing) "Pause" else "Play", tint = violet)
-                    }
-                }
-                Box(Modifier.fillMaxWidth().height(30.dp).background(surface, RoundedCornerShape(6.dp)).clickable {
-                    playhead = (playhead + 0.08f).coerceAtMost(1f)
-                }) {
-                    Row(Modifier.fillMaxSize().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        (0..5).forEach { Text("0${it * 2}s", color = secondary, fontSize = 9.sp) }
-                    }
-                    Box(Modifier.fillMaxHeight().fillMaxWidth(playhead).padding(end = 1.dp), contentAlignment = Alignment.CenterEnd) {
-                        Box(Modifier.width(2.dp).fillMaxHeight().background(violet))
-                    }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    layers.asReversed().forEach { layer ->
-                        Row(
-                            Modifier.fillMaxWidth().height(42.dp).background(if (selectedLayer == layer.id) Color(0xFF28233E) else surface, RoundedCornerShape(6.dp))
-                                .clickable { selectedLayer = layer.id }.padding(horizontal = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(if (layer.kind == "TEXT") Icons.Default.TextFields else Icons.Default.Layers, null, tint = violet, modifier = Modifier.size(17.dp))
-                            Spacer(Modifier.width(9.dp))
-                            Text(layer.name, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                            Box(Modifier.fillMaxWidth(0.43f).height(22.dp).background(if (selectedLayer == layer.id) Color(0xFF6554A8) else Color(0xFF34445C), RoundedCornerShape(4.dp)))
+            Text("⋮", color = fg, fontSize = 22.sp)
+        }
+        Row(Modifier.fillMaxWidth().background(header).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
+            listOf("File", "Edit", "Composition", "Layer", "Effect", "Animation", "View", "Window", "Help").forEach { name ->
+                Box {
+                    Text(name, color = if (menu == name) purple else fg, fontSize = 10.sp,
+                        modifier = Modifier.clickable { menu = if (menu == name) null else name }.padding(horizontal = 8.dp, vertical = 9.dp))
+                    DropdownMenu(expanded = menu == name, onDismissRequest = { menu = null }) {
+                        val entries = when (name) {
+                            "File" -> listOf("New Project", "Open Project…", "Save", "Save As…", "Import", "Export")
+                            "Edit" -> listOf("Undo", "Redo", "Cut", "Copy", "Paste", "Duplicate", "Delete", "Preferences")
+                            "Composition" -> listOf("New Composition", "Composition Settings…", "Trim Comp to Work Area")
+                            "Layer" -> listOf("New Text Layer", "New Solid", "New Camera", "New Light", "Pre-compose")
+                            "Effect" -> listOf("Effect Controls", "Effects & Presets")
+                            "Animation" -> listOf("Add Keyframe", "Toggle Animation", "Keyframe Assistant", "Graph Editor")
+                            "View" -> listOf("Fit", "50%", "100%", "200%", "Show Grid", "Show Rulers")
+                            "Window" -> panels
+                            else -> listOf("About EffectCraft", "Documentation", "Keyboard Shortcuts")
+                        }
+                        entries.forEach { item ->
+                            DropdownMenuItem(text = { Text(item, fontSize = 12.sp) }, onClick = {
+                                if (item == "New Text Layer" || item == "New Solid") {
+                                    val id = nextId++
+                                    layers.add(0, UiLayer(id, if (item == "New Solid") "Solid " + id else "Text Layer " + id,
+                                        if (item == "New Solid") "Solid" else "Text",
+                                        if (item == "New Solid") Color(0xFF9B9B65) else Color(0xFF9D80CF)))
+                                    selectedLayer = id
+                                }
+                                if (panels.contains(item)) panelName = item
+                                menu = null
+                            })
                         }
                     }
                 }
-                if (showProperties) {
-                    Text("LAYER CONTROLS", color = secondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("Transform", "Opacity", "Effects", "Keyframes", "Blend").forEach {
-                            AssistChip(onClick = { }, label = { Text(it, fontSize = 11.sp) })
-                        }
-                    }
-                    Text("Select a layer to inspect its properties.", color = secondary, fontSize = 11.sp)
+            }
+        }
+        Row(Modifier.fillMaxWidth().height(40.dp).background(panel).horizontalScroll(rememberScrollState()).padding(horizontal = 5.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+            tools.forEach { tool ->
+                val glyph = when (tool) {
+                    "Selection" -> "↖"; "Hand" -> "✋"; "Zoom" -> "⌕"; "Rectangle" -> "□"
+                    "Ellipse" -> "○"; "Pen" -> "✒"; "Type" -> "T"; "Brush" -> "✎"
+                    else -> tool.take(1)
+                }
+                Box(Modifier.padding(end = 3.dp).size(32.dp).background(if (selectedTool == tool) active else Color.Transparent, RoundedCornerShape(3.dp))
+                    .clickable { selectedTool = tool }, contentAlignment = Alignment.Center) {
+                    Text(glyph, color = if (selectedTool == tool) Color.White else muted, fontSize = 14.sp)
                 }
             }
-            Row(Modifier.fillMaxWidth().background(surface).horizontalScroll(rememberScrollState()).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                EditorTool("Add layer", Icons.Default.Add) {
-                    layers.add(EditorLayer(nextId++, "New Layer", "SHAPE"))
+        }
+        Row(Modifier.fillMaxWidth().background(Color(0xFF1D1D1D)).horizontalScroll(rememberScrollState())) {
+            listOf("Project", "Effect Controls", "Composition", "Timeline", "Effects & Presets", "Properties").forEach { tab ->
+                Column(Modifier.clickable { panelName = tab }.padding(horizontal = 10.dp, vertical = 7.dp)) {
+                    Text(tab, color = if (panelName == tab) fg else muted, fontSize = 10.sp,
+                        fontWeight = if (panelName == tab) FontWeight.Bold else FontWeight.Normal)
+                    Spacer(Modifier.height(3.dp))
+                    Box(Modifier.fillMaxWidth().height(2.dp).background(if (panelName == tab) purple else Color.Transparent))
                 }
-                EditorTool("Text", Icons.Default.TextFields) {
-                    layers.add(EditorLayer(nextId++, "Text Layer", "TEXT"))
-                }
-                EditorTool("Trim", Icons.Default.ContentCut) { }
-                EditorTool("Effects", Icons.Default.Tune) { showProperties = true }
-                EditorTool("Settings", Icons.Default.Settings) { }
             }
-            Text(
-                "MOBILE PORT FOUNDATION • RENDER ENGINE NOT CONNECTED YET",
-                Modifier.fillMaxWidth().background(canvas).padding(vertical = 6.dp),
-                color = secondary,
-                fontSize = 8.sp,
-                letterSpacing = 0.8.sp
-            )
+        }
+        when (panelName) {
+            "Composition", "Layer" -> CompositionPanel(layers, selectedLayer, playhead, { playhead = it }, { selectedLayer = it })
+            "Timeline" -> TimelinePanel(layers, selectedLayer, playhead, { playhead = it }, { selectedLayer = it }, onAdd = {
+                val id = nextId++
+                layers.add(0, UiLayer(id, "Text Layer " + id, "Text", Color(0xFF9D80CF)))
+                selectedLayer = id
+            }, onDelete = { id -> layers.removeAll { it.id == id } })
+            "Project" -> ProjectPanel(layers, { selectedLayer = it }, {
+                val id = nextId++
+                layers.add(0, UiLayer(id, "Footage " + id, "Footage", Color(0xFF729B83)))
+            })
+            "Effects & Presets" -> EffectsPanel(query, { query = it })
+            "Effect Controls" -> EffectControlsPanel(current?.name)
+            "Properties" -> PropertiesPanel(current?.name)
+            else -> GenericPanel(panelName)
+        }
+        Row(Modifier.fillMaxWidth().background(Color(0xFF1C1C1C)).horizontalScroll(rememberScrollState()).padding(vertical = 4.dp)) {
+            listOf("Preview", "Properties", "Align", "Audio", "Effects & Presets", "Character", "Paragraph", "Render Queue").forEach { tab ->
+                Text(tab, color = if (panelName == tab) purple else muted, fontSize = 9.sp,
+                    modifier = Modifier.clickable { panelName = tab }.padding(horizontal = 9.dp, vertical = 5.dp))
+            }
+        }
+        Row(Modifier.fillMaxWidth().background(Color(0xFF191919)).padding(horizontal = 9.dp, vertical = 5.dp)) {
+            Text("Tool: " + selectedTool, color = muted, fontSize = 8.sp)
+            Spacer(Modifier.weight(1f))
+            Text(layers.size.toString() + " layers   •   EffectCraft Mobile", color = muted, fontSize = 8.sp)
         }
     }
 }
 
 @Composable
-private fun EditorTool(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    FilledTonalButton(onClick = onClick, colors = ButtonDefaults.filledTonalButtonColors(containerColor = raised)) {
-        Icon(icon, null, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(5.dp))
-        Text(label, fontSize = 11.sp)
+private fun CompositionPanel(layers: List<UiLayer>, selected: Int, time: Float, onTime: (Float) -> Unit, onSelect: (Int) -> Unit) {
+    Column(Modifier.fillMaxSize().background(bg)) {
+        PanelHeader("Composition", "960 × 540   •   30 fps")
+        Row(Modifier.fillMaxWidth().height(29.dp).background(panel).padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Active Camera", color = muted, fontSize = 9.sp)
+            Spacer(Modifier.weight(1f))
+            Text("1 View     Fit", color = muted, fontSize = 9.sp)
+        }
+        Box(Modifier.weight(1f).fillMaxWidth().background(Color(0xFF171717)), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth().padding(14.dp).aspectRatio(16f / 9f).background(Color(0xFF101010)).border(1.dp, Color(0xFF666666))) {
+                Canvas(Modifier.fillMaxSize()) {
+                    val cell = 18.dp.toPx()
+                    var y = 0f
+                    while (y < size.height) {
+                        var x = 0f
+                        while (x < size.width) {
+                            if (((x / cell).toInt() + (y / cell).toInt()) % 2 == 0)
+                                drawRect(Color(0xFF171717), Offset(x, y), Size(cell, cell))
+                            x += cell
+                        }
+                        y += cell
+                    }
+                    drawRect(Color(0xFF777777), Offset.Zero, size, style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+                    drawLine(Color(0x335C9BFF), Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), 1.dp.toPx())
+                    drawLine(Color(0x335C9BFF), Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 1.dp.toPx())
+                }
+                val layer = layers.firstOrNull { it.id == selected }
+                if (layer != null) Box(Modifier.align(Alignment.Center).fillMaxWidth(0.48f).height(38.dp).border(1.dp, purple), contentAlignment = Alignment.Center) {
+                    Text(layer.name, color = Color.White, fontSize = 11.sp)
+                }
+                Text("Active Composition", color = muted, fontSize = 8.sp, modifier = Modifier.align(Alignment.TopStart).padding(6.dp))
+            }
+        }
+        Row(Modifier.fillMaxWidth().background(panel).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("◀    ▶    ■", color = purple, fontSize = 13.sp)
+            Spacer(Modifier.weight(1f))
+            Text("00:00:" + (time * 10).toInt().toString().padStart(2, '0') + ":00", color = fg, fontSize = 10.sp)
+        }
+        TimelinePanel(layers, selected, time, onTime, onSelect, onAdd = {}, onDelete = {})
+    }
+}
+
+@Composable
+private fun TimelinePanel(
+    layers: List<UiLayer>, selected: Int, time: Float, onTime: (Float) -> Unit, onSelect: (Int) -> Unit,
+    onAdd: () -> Unit, onDelete: (Int) -> Unit
+) {
+    Column(Modifier.fillMaxWidth().heightIn(min = 210.dp, max = 310.dp).background(panel)) {
+        Row(Modifier.fillMaxWidth().height(34.dp).background(header).padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Timeline", color = fg, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.weight(1f))
+            Text("00:00:00:00", color = muted, fontSize = 9.sp)
+            Text("  +  ", color = purple, fontSize = 17.sp, modifier = Modifier.clickable { onAdd() })
+            Text("⋮", color = muted, fontSize = 16.sp)
+        }
+        Row(Modifier.fillMaxWidth().height(25.dp).background(Color(0xFF303030)).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Layer Name", color = muted, fontSize = 8.sp, modifier = Modifier.weight(0.42f))
+            Box(Modifier.weight(0.58f).fillMaxHeight().clickable { onTime((time + 0.1f).coerceAtMost(1f) }) {
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    (0..5).forEach { Text((it * 2).toString() + "s", color = muted, fontSize = 8.sp) }
+                }
+            }
+        }
+        if (layers.isEmpty()) Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Text("Create a layer to begin", color = muted, fontSize = 10.sp)
+        } else LazyColumn(Modifier.weight(1f)) {
+            items(layers, key = { it.id }) { layer ->
+                Row(Modifier.fillMaxWidth().height(34.dp).background(if (selected == layer.id) Color(0xFF3D374A) else panel)
+                    .border(0.35.dp, border).clickable { onSelect(layer.id) }, verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.weight(0.42f).fillMaxHeight().padding(horizontal = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("◉", color = layer.tint, fontSize = 10.sp)
+                        Spacer(Modifier.width(5.dp))
+                        Text(layer.name, color = fg, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Box(Modifier.weight(0.58f).fillMaxHeight().padding(vertical = 8.dp, horizontal = 3.dp)) {
+                        Box(Modifier.fillMaxSize().background(layer.tint.copy(alpha = 0.45f), RoundedCornerShape(2.dp)))
+                        Box(Modifier.fillMaxHeight().width(1.dp).background(purple).align(Alignment.CenterStart)
+                            .offset(x = (time * 130).dp))
+                    }
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth().background(header).padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Current Time Indicator", color = muted, fontSize = 8.sp)
+            Spacer(Modifier.weight(1f))
+            Text("−", color = muted, modifier = Modifier.clickable { onTime((time - 0.05f).coerceAtLeast(0f)) })
+            Text("  ◆  ", color = purple, modifier = Modifier.clickable { })
+            Text("+", color = muted, modifier = Modifier.clickable { onTime((time + 0.05f).coerceAtMost(1f)) })
+        }
+    }
+}
+
+@Composable
+private fun ProjectPanel(layers: List<UiLayer>, onSelect: (Int) -> Unit, onAdd: () -> Unit) {
+    Column(Modifier.fillMaxSize().background(panel)) {
+        PanelHeader("Project", "Name   •   Label")
+        Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Search Project", color = muted, fontSize = 10.sp, modifier = Modifier.weight(1f).background(header, RoundedCornerShape(3.dp)).padding(10.dp))
+            Text("＋", color = purple, fontSize = 22.sp, modifier = Modifier.clickable { onAdd() }.padding(horizontal = 10.dp))
+        }
+        Row(Modifier.fillMaxWidth().background(Color(0xFF303030)).padding(8.dp)) {
+            Text("Name", color = muted, fontSize = 9.sp, modifier = Modifier.weight(1f))
+            Text("Label", color = muted, fontSize = 9.sp)
+        }
+        layers.forEach { layer ->
+            Row(Modifier.fillMaxWidth().clickable { onSelect(layer.id) }.padding(horizontal = 10.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(if (layer.kind == "Text") "T" else if (layer.kind == "Shape") "◇" else "▣", color = layer.tint, fontSize = 14.sp)
+                Spacer(Modifier.width(9.dp))
+                Text(layer.name, color = fg, fontSize = 10.sp)
+                Spacer(Modifier.weight(1f))
+                Box(Modifier.size(9.dp).background(layer.tint, RoundedCornerShape(2.dp)))
+            }
+            HorizontalDivider(color = border, thickness = 0.5.dp)
+        }
+    }
+}
+
+@Composable
+private fun EffectsPanel(query: String, onQuery: (String) -> Unit) {
+    val categories = listOf("Animation Presets", "3D Channel", "Audio", "Blur & Sharpen", "Channel", "Color Correction", "Distort", "Generate", "Keying", "Matte", "Noise & Grain", "Perspective", "Simulation", "Stylize", "Text", "Time", "Transition", "Utility")
+    Column(Modifier.fillMaxSize().background(panel)) {
+        PanelHeader("Effects & Presets", "Browse effects")
+        OutlinedTextField(query, onQuery, modifier = Modifier.fillMaxWidth().padding(8.dp), placeholder = { Text("Search effects & presets", fontSize = 10.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 11.sp))
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            categories.filter { query.isBlank() || it.contains(query, true) }.forEach { category ->
+                Text("▸  " + category, color = fg, fontSize = 10.sp, modifier = Modifier.fillMaxWidth().clickable { }.padding(horizontal = 12.dp, vertical = 10.dp))
+                HorizontalDivider(color = border, thickness = 0.5.dp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun EffectControlsPanel(layer: String?) {
+    Column(Modifier.fillMaxSize().background(panel)) {
+        PanelHeader("Effect Controls", layer ?: "No layer selected")
+        if (layer == null) EmptyPanel("Select a layer to inspect its effects.")
+        else {
+            Text(layer, color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(12.dp))
+            Text("Effects", color = muted, fontSize = 10.sp, modifier = Modifier.padding(horizontal = 12.dp))
+            EmptyPanel("No effects applied")
+        }
+    }
+}
+
+@Composable
+private fun PropertiesPanel(layer: String?) {
+    Column(Modifier.fillMaxSize().background(panel)) {
+        PanelHeader("Properties", layer ?: "No Selection")
+        if (layer == null) EmptyPanel("Select a layer to display its properties.")
+        else {
+            Text(layer, color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(12.dp))
+            listOf("Anchor Point" to "480, 270", "Position" to "480, 270", "Scale" to "100%, 100%", "Rotation" to "0°", "Opacity" to "100%").forEach { pair ->
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 7.dp)) {
+                    Text(pair.first, color = muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                    Text(pair.second, color = fg, fontSize = 10.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GenericPanel(name: String) {
+    Column(Modifier.fillMaxSize().background(panel)) {
+        PanelHeader(name, "EffectCraft panel")
+        EmptyPanel(name + " panel")
+    }
+}
+
+@Composable
+private fun PanelHeader(title: String, detail: String) {
+    Row(Modifier.fillMaxWidth().height(33.dp).background(header).padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = fg, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.weight(1f))
+        Text(detail, color = muted, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text("  ⋮", color = muted, fontSize = 14.sp)
+    }
+    HorizontalDivider(color = border, thickness = 0.5.dp)
+}
+
+@Composable
+private fun EmptyPanel(message: String) {
+    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+        Text(message, color = muted, fontSize = 10.sp)
     }
 }
