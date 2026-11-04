@@ -1,6 +1,9 @@
 package com.tidebound.game
 
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import com.badlogic.gdx.backends.android.AndroidApplication
@@ -11,17 +14,25 @@ class MainActivity : AndroidApplication() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Keep a copy of unexpected startup/runtime errors so they can be shared
-        // even when Android closes the game immediately.
+        val report = File(filesDir, "tidebound-crash.txt")
+        if (report.exists()) {
+            val savedError = try { report.readText() } catch (_: Exception) { "Crash report could not be read." }
+            AlertDialog.Builder(this)
+                .setTitle("Previous Tidebound crash")
+                .setMessage(savedError.take(12000))
+                .setPositiveButton("Copy error") { _, _ ->
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Tidebound crash", savedError))
+                }
+                .setNegativeButton("Close", null)
+                .show()
+        }
+
         val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
             try {
-                val report = File(filesDir, "tidebound-crash.txt")
-                report.writeText(
-                    "Thread: ${thread.name}\n" +
-                    Log.getStackTraceString(error)
-                )
-                Log.e("TideboundCrash", "Uncaught game error saved to ${report.absolutePath}", error)
+                report.writeText("Thread: ${thread.name}\n" + Log.getStackTraceString(error))
+                Log.e("TideboundCrash", "Crash report saved", error)
             } catch (_: Exception) {
                 Log.e("TideboundCrash", "Could not save crash report", error)
             }
@@ -32,19 +43,22 @@ class MainActivity : AndroidApplication() {
             useAccelerometer = false
             useCompass = false
             useImmersiveMode = true
-            // Avoid requesting multisampling on devices whose EGL driver
-            // cannot provide an MSAA surface.
             numSamples = 0
         }
 
         try {
             initialize(TideboundGame(), config)
         } catch (error: Throwable) {
-            Log.e("TideboundStartup", "Failed to initialize Tidebound", error)
+            val details = Log.getStackTraceString(error)
+            try { report.writeText("Startup initialization error\n" + details) } catch (_: Exception) {}
             AlertDialog.Builder(this)
                 .setTitle("Tidebound couldn't start")
-                .setMessage(Log.getStackTraceString(error).take(3500))
-                .setPositiveButton("Close", null)
+                .setMessage(details.take(12000))
+                .setPositiveButton("Copy error") { _, _ ->
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Tidebound startup error", details))
+                }
+                .setNegativeButton("Close", null)
                 .show()
         }
     }
