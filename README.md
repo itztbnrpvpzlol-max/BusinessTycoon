@@ -32,3 +32,18 @@ Keep Android UI/profile management separate from the game execution layer. Inves
 ## Build
 
 GitHub Actions runs `gradle assembleDebug` and uploads the debug APK as the `AetherLauncher-debug-apk` artifact.
+
+
+## EffectCraft Studio (experimental)
+
+Aether now includes a **Studio** tab that embeds the EffectCraft browser editor in an Android WebView. It opens the community-hosted alpha workspace at `https://getartcraft.org/studio/effectcraft?webgl` and forces the WebGL2 renderer rather than relying on WebGPU.
+
+Important limitations:
+
+- This is a hosted community build, **not** an official Android port or a locally bundled copy of EffectCraft.
+- The hosted workspace currently identifies itself as an older alpha release. Its controls are designed primarily for desktop browsers, so touch interaction may be awkward.
+- WebGL2 availability depends on the Android System WebView and the phone's GPU driver. Startup may fail on some devices.
+- The phone has 2 GB RAM; large footage, compositions and renders may crash or become very slow. Start with a tiny composition and save/export backups frequently.
+- The first load requires an internet connection. Project persistence is handled by the hosted page's browser storage.
+
+This integration is a first compatibility test, not a claim that EffectCraft is fully supported on this device. Upstream source and web-build documentation: https://github.com/storytold/effectcraft
