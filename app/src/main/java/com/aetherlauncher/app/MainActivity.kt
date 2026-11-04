@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
+import android.view.KeyEvent
+import android.view.MotionEvent
 import android.opengl.EGL14
 import android.opengl.EGLConfig
 import android.opengl.EGLContext
@@ -49,6 +51,88 @@ private val muted = Color(0xFF9AA9C2)
 private const val PREFS = "aether_settings"
 
 class MainActivity : ComponentActivity() {
+    private var studioWebView: WebView? = null
+    var studioControlsEnabled = false
+    private var volumeUpHeld = false
+    private var volumeDownHeld = false
+    private var cursorX = 40f
+    private var cursorY = 40f
+    private var lastTouchY = 0f
+    private var cursorSpeed = 1.0f
+    private var cursorSize = 24f
+
+    fun attachStudioWebView(view: WebView) {
+        studioWebView = view
+        view.setOnTouchListener { _, event ->
+            val density = resources.displayMetrics.density
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    cursorX = event.x / density
+                    cursorY = event.y / density
+                    lastTouchY = event.y
+                    updateVirtualCursor()
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaY = event.y - lastTouchY
+                    lastTouchY = event.y
+                    cursorX = (event.x / density).coerceIn(0f, view.width / density)
+                    cursorY = (cursorY + deltaY / density * cursorSpeed).coerceIn(0f, view.height / density)
+                    if (volumeUpHeld && volumeDownHeld) {
+                        val wheel = (-deltaY * cursorSpeed * 1.8f).toInt()
+                        if (wheel != 0) view.evaluateJavascript("window.dispatchEvent(new WheelEvent('wheel',{deltaY:" + wheel + ",bubbles:true,cancelable:true}));", null)
+                    }
+                    updateVirtualCursor()
+                }
+            }
+            true
+        }
+        updateVirtualCursor()
+    }
+
+    fun updateCursorSettings(size: Float, speed: Float) {
+        cursorSize = size
+        cursorSpeed = speed
+        updateVirtualCursor()
+    }
+
+    private fun updateVirtualCursor() {
+        val view = studioWebView ?: return
+        val x = cursorX
+        val y = cursorY
+        val size = cursorSize
+        val js = "(function(){var c=document.getElementById('__aether_cursor');if(!c){c=document.createElement('div');c.id='__aether_cursor';c.textContent='➤';c.style.cssText='position:fixed;z-index:2147483647;pointer-events:none;color:white;text-shadow:0 1px 3px black,1px 0 3px black;font-family:Arial,sans-serif;line-height:1;';document.documentElement.appendChild(c);}c.style.fontSize='" + size + "px';c.style.left='" + x + "px';c.style.top='" + y + "px';})();"
+        view.evaluateJavascript(js, null)
+    }
+
+    private fun clickAt(button: Int) {
+        val view = studioWebView ?: return
+        val x = cursorX
+        val y = cursorY
+        val js = "(function(){var x=" + x + ",y=" + y + ",t=document.elementFromPoint(x,y)||document;var b=" + button + ";var common={bubbles:true,cancelable:true,view:window,clientX:x,clientY:y,button:b,buttons:(b===0?1:2)};t.dispatchEvent(new PointerEvent('pointerdown',Object.assign({pointerId:1,pointerType:'mouse',isPrimary:true},common)));t.dispatchEvent(new MouseEvent('mousedown',common));common.buttons=0;t.dispatchEvent(new PointerEvent('pointerup',Object.assign({pointerId:1,pointerType:'mouse',isPrimary:true},common)));t.dispatchEvent(new MouseEvent('mouseup',common));t.dispatchEvent(new MouseEvent('click',common));})();"
+        view.evaluateJavascript(js, null)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (studioControlsEnabled && studioWebView != null &&
+            (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+            if (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+                if (event.action == KeyEvent.ACTION_DOWN) volumeUpHeld = true
+                if (event.action == KeyEvent.ACTION_UP) {
+                    volumeUpHeld = false
+                    if (!volumeDownHeld) clickAt(0)
+                }
+            } else {
+                if (event.action == KeyEvent.ACTION_DOWN) volumeDownHeld = true
+                if (event.action == KeyEvent.ACTION_UP) {
+                    volumeDownHeld = false
+                    if (!volumeUpHeld) clickAt(2)
+                }
+            }
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -165,6 +249,11 @@ private fun AetherHome() {
     var catalogLoading by remember { mutableStateOf(false) }
     var catalogError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val hostActivity = context as? MainActivity
+    SideEffect {
+        hostActivity?.studioControlsEnabled = tab == "Studio"
+        hostActivity?.updateCursorSettings(cursorSize, cursorSpeed)
+    }
 
     Surface(Modifier.fillMaxSize(), color = bg) {
         Column(Modifier.fillMaxSize()) {
@@ -250,6 +339,7 @@ private fun AetherHome() {
                                     settings.allowContentAccess = false
                                     webViewClient = WebViewClient()
                                     webChromeClient = WebChromeClient()
+                                    (viewContext as? MainActivity)?.attachStudioWebView(this)
                                     loadUrl("https://getartcraft.org/studio/effectcraft?webgl")
                                 }
                             },
