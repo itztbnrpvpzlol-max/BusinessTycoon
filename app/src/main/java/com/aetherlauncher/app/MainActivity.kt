@@ -43,19 +43,22 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private data class DeviceInfo(val model: String, val android: String, val ramMb: Long, val appClass: Int, val is64: Boolean, val abis: String)
+private data class DeviceInfo(val model: String, val android: String, val ramMb: Long, val appClass: Int, val is64: Boolean, val abis: String, val glEs: String)
 
 private fun detectDevice(context: Context): DeviceInfo {
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
     val mem = ActivityManager.MemoryInfo()
     am.getMemoryInfo(mem)
+    val glVersion = am.deviceConfigurationInfo.reqGlEsVersion
+    val glVersionText = (glVersion shr 16).toString() + "." + (glVersion and 0xffff).toString()
     return DeviceInfo(
         Build.MANUFACTURER + " " + Build.MODEL,
         Build.VERSION.RELEASE ?: "Unknown",
         mem.totalMem / (1024L * 1024L),
         am.memoryClass,
         Process.is64Bit(),
-        Build.SUPPORTED_ABIS.joinToString()
+        Build.SUPPORTED_ABIS.joinToString(),
+        glVersionText
     )
 }
 
@@ -152,6 +155,7 @@ private fun AetherHome() {
                                 Info("Android app memory class", device.appClass.toString() + " MB")
                                 Info("Process architecture", if (device.is64) "64-bit" else "32-bit")
                                 Info("Supported ABIs", device.abis)
+                                Info("OpenGL ES reported", device.glEs)
                             }
                         }
                         Text("Your reported Mali-T820 is the graphics target. We still need a live EGL graphics probe to read the installed GPU driver.", color = muted, fontSize = 12.sp)
