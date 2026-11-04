@@ -50,20 +50,20 @@ object Storage {
     private const val KEY = "tycoon_save"
     fun load(c: Context): GameData {
         val p = c.getSharedPreferences(KEY, Context.MODE_PRIVATE)
-        val g = GameData(cash = p.getFloat("cash", 50f).toDouble(),
+        val g = GameData(cash = p.getString("cash", "50.0")!!.toDoubleOrNull() ?: 50.0,
             owned = businesses.indices.map { p.getInt("owned_$it", 0) },
             clickLevel = p.getInt("click", 0), incomeLevel = p.getInt("income", 0),
             shares = p.getInt("shares", 0), properties = p.getInt("properties", 0),
-            stockPrice = p.getFloat("stock", 100f).toDouble(), prestige = p.getInt("prestige", 0),
-            lifetime = p.getFloat("lifetime", 0f).toDouble(), taps = p.getLong("taps", 0),
+            stockPrice = p.getString("stock", "100.0")!!.toDoubleOrNull() ?: 100.0, prestige = p.getInt("prestige", 0),
+            lifetime = p.getString("lifetime", "0.0")!!.toDoubleOrNull() ?: 0.0, taps = p.getLong("taps", 0),
             savedAt = p.getLong("savedAt", System.currentTimeMillis()))
         return Engine.offline(g).first
     }
     fun save(c: Context, g: GameData) {
         val e = c.getSharedPreferences(KEY, Context.MODE_PRIVATE).edit()
-            .putFloat("cash", g.cash.toFloat()).putInt("click", g.clickLevel).putInt("income", g.incomeLevel)
-            .putInt("shares", g.shares).putInt("properties", g.properties).putFloat("stock", g.stockPrice.toFloat())
-            .putInt("prestige", g.prestige).putFloat("lifetime", g.lifetime.toFloat())
+            .putString("cash", g.cash.toString()).putInt("click", g.clickLevel).putInt("income", g.incomeLevel)
+            .putInt("shares", g.shares).putInt("properties", g.properties).putString("stock", g.stockPrice.toString())
+            .putInt("prestige", g.prestige).putString("lifetime", g.lifetime.toString())
             .putLong("taps", g.taps).putLong("savedAt", System.currentTimeMillis())
         g.owned.forEachIndexed { i, n -> e.putInt("owned_$i", n) }
         e.apply()
