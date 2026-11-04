@@ -353,7 +353,7 @@ private fun AetherHome() {
                                     webViewClient = object : WebViewClient() {
                                         override fun onPageFinished(view: WebView, url: String?) {
                                             super.onPageFinished(view, url)
-                                            (view.context as? MainActivity)?.refreshVirtualCursor()
+                                            hostActivity?.refreshVirtualCursor()
                                         }
                                     }
                                     webChromeClient = WebChromeClient()
