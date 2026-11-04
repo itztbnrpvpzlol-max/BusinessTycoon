@@ -1,40 +1,35 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
-    namespace = "com.tidebound.game"
+    namespace = "com.aetherlauncher.app"
     compileSdk = 35
-
     defaultConfig {
-        applicationId = "com.tidebound.game"
-        minSdk = 23
+        applicationId = "com.aetherlauncher.app"
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
     }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
-        }
-    }
+    kotlinOptions { jvmTarget = "17" }
+    buildFeatures { compose = true }
 }
 
 dependencies {
-    implementation("com.badlogicgames.gdx:gdx:1.13.1")
-    implementation("com.badlogicgames.gdx:gdx-backend-android:1.13.1")
-    implementation("com.badlogicgames.gdx:gdx-platform:1.13.1:natives-arm64-v8a")
-    implementation("com.badlogicgames.gdx:gdx-platform:1.13.1:natives-armeabi-v7a")
-    implementation("com.badlogicgames.gdx:gdx-platform:1.13.1:natives-x86_64")
+    implementation(platform("androidx.compose:compose-bom:2025.01.00"))
+    implementation("androidx.activity:activity-compose:1.10.0")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    debugImplementation("androidx.compose.ui:ui-tooling")
 }
